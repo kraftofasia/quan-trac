@@ -81,7 +81,7 @@
 </head>
 <body>
     <div id="data-container">
-        </div>
+    </div>
 
     <script>
         // 1. Khai báo URL Endpoint và Header
@@ -105,11 +105,6 @@
             };
 
             try {
-                // 💡 CHỈNH SỬA: Thay vì hiển thị thông báo "Đang tải..." trong container,
-                // chúng ta chỉ nên xóa nội dung cũ (nếu có) trước khi tải.
-                // Tuy nhiên, vì chúng ta muốn loại bỏ hoàn toàn, ta chỉ cần gọi fetch ngay.
-                // Nếu muốn giữ thông báo lỗi (error), ta vẫn cần hàm này.
-                // Ta tạm thời KHÔNG đặt thông báo tải vào đây nữa.
                 
                 const response = await fetch(API_URL, requestOptions);
 
@@ -130,7 +125,6 @@
 
         // Hàm tạo các phần tử HTML để hiển thị dữ liệu
         function displayData(apiResponse) {
-            // Đảm bảo container trống trước khi vẽ
             container.innerHTML = ''; 
 
             const stationsData = apiResponse; 
@@ -188,10 +182,18 @@
                         Object.keys(logs).forEach(key => {
                             const measure = logs[key]; 
                             
-                            // Định dạng giá trị
                             const value = measure.value;
-                            const valueDisplay = (value !== null && value !== undefined) 
-                                                     ? Number(value).toFixed(2) : 'N/A';
+                            let formattedValue = 'N/A';
+                            
+                            // 💡 LOGIC CẬP NHẬT: Định dạng số theo chuẩn 'en-US' (phẩy hàng nghìn, chấm thập phân)
+                            if (value !== null && value !== undefined) {
+                                const numberValue = Number(value);
+                                
+                                formattedValue = numberValue.toLocaleString('en-US', { 
+                                    minimumFractionDigits: 0, 
+                                    maximumFractionDigits: 2 
+                                });
+                            }
                             
                             // LOGIC: Xây dựng chuỗi giới hạn linh hoạt
                             let limitText = '';
@@ -222,7 +224,7 @@
                                     <span class="status-dot"></span>
                                 </div>
                                 <div class="value-display-container">
-                                    <span class="value-display">${valueDisplay}</span>
+                                    <span class="value-display">${formattedValue}</span>
                                     <span class="unit-display">${measure.unit || ''}</span>
                                 </div>
                                 <div class="limit-info">
