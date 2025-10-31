@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo cáo Dữ liệu Quan trắc</title>
+    <style>
+        /* CSS MỚI: Định dạng báo cáo dạng thẻ (Card View) */
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f9; }
+        #data-container { max-width: 1200px; margin: auto; }
+        
+        /* Tiêu đề Trạm */
+        .station-header { 
+            background-color: #ffffff; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            margin-bottom: 10px;
+        }
+        .station-header h3 { color: #007bff; margin: 0; font-size: 1.5em; display: inline-block; }
+        .station-header p { color: #6c757d; margin: 5px 0 0 0; font-size: 0.9em; }
+
+        /* Container cho các Thẻ đo lường */
+        .measurement-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* 3 hoặc 4 cột trên màn hình lớn */
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-top: 10px;
+        }
+
+        /* Định dạng Thẻ Đo lường (Card) */
+        .measure-card {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 5px solid #007bff; /* Màu sắc trang trí */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 120px;
+        }
+        .measure-card .key-info { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 5px;
+        }
+        .measure-card .key-name {
+            font-size: 0.9em;
+            color: #6c757d;
+            font-weight: bold;
+        }
+        .measure-card .value-display {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #28a745; /* Màu xanh lá cây cho giá trị */
+            line-height: 1.1;
+        }
+        .measure-card .unit-display {
+            font-size: 1em;
+            color: #6c757d;
+            font-weight: normal;
+        }
+        .measure-card .limit-info {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 5px;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #28a745; /* Giả định trạng thái Tốt/Trong giới hạn */
+            display: inline-block;
+        }
+        .error { color: #dc3545; }
+        .loading { color: #f90; }
+    </style>
+</head>
+<body>
+
+    <div id="data-container">
+        <p class="loading">Đang tải dữ liệu...</p>
+    </div>
+
+    <script>
+        // 1. Khai báo URL Endpoint và Header
+        const API_URL = 'https://global-api.ilotusland.com/calc/share-api/station-auto/newest-data?id=6690f38464486d001b17fb33&province=5f6433e9ad4165001151f896&stationType=5a936ffd06fc4f3390afb7c7&stationKeys=KT_MARUBENI2_1,KT_MARUBENI1&measuringList=CO,Luu_Luong,NOx,O2,Bui,Ap_Suat,SO2,Nhiet_Do&dataType=origin';
+        const SECRET_KEY = 'Eq4h6F1p6x4Zv630W-C4lq_JLrD53ElKu7002s_2R_2Y'; 
+
+        const container = document.getElementById('data-container'); 
+
+        async function loadEmissionData() {
+            if (!container) {
+                console.error("Lỗi FATAL: Không tìm thấy phần tử HTML có ID là 'data-container'.");
+                return;
+            }
+
+            const requestOptions = {
+                method: 'GET',
+                headers: {
+                    'secret-key': SECRET_KEY,
+                    'Content-Type': 'application/json' 
+                }
+            };
+
+            try {
+                container.innerHTML = `<p class="loading">Đang tải dữ liệu...</p>`;
+                const response = await fetch(API_URL, requestOptions);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Lỗi HTTP ${response.status}: ${errorText.substring(0, 100)}...`);
+                }
+
+                const data = await response.json();
+                displayData(data);
+
+            } catch (error) {
+                console.error("Lỗi khi tải dữ liệu API:", error);
+                container.innerHTML = `<p class="error">❌ Lỗi kết nối: ${error.message}. Kiểm tra khóa và CORS.</p>`;
+            }
+        }
+
+        // Hàm tạo các phần tử HTML để hiển thị dữ liệu (ĐÃ CHỈNH SỬA)
+	// Hàm tạo các phần tử HTML để hiển thị dữ liệu (ĐÃ CHỈNH SỬA LẠI LOGIC GIỚI HẠN)
+function displayData(apiResponse) {
+    container.innerHTML = '<h2>Báo cáo Quan trắc Thời gian thực</h2>'; 
+
+    const stationsData = apiResponse; 
+
+    if (Array.isArray(stationsData) && stationsData.length > 0) {
+        
+        stationsData.forEach(station => {
+            
+            // --- 1. PHẦN ĐẦU BÁO CÁO (HEADER) ---
+            const stationContainer = document.createElement('div');
+            stationContainer.classList.add('station-report');
+
+            const stationName = station.name || station.key || 'Trạm không rõ';
+            
+            // Chuẩn hóa địa chỉ
+            let displayAddress = 'N/A';
+            if (station.key === 'KT_MARUBENI1' || station.key === 'KT_MARUBENI2_1') {
+                displayAddress = 'Phước Hoà, TP HCM, Việt Nam';
+            } else {
+                displayAddress = station.address || 'N/A';
+            }
+            
+            // Thời gian lấy mẫu
+            let timeString = 'N/A';
+            if(station.receivedAt) {
+                 timeString = new Date(station.receivedAt).toLocaleString('vi-VN', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric', 
+                    hour: '2-digit', minute: '2-digit', hour12: false 
+                 });
+            }
+
+            // Thêm tiêu đề trạm
+            stationContainer.innerHTML += `
+                <div class="station-header">
+                    <h3>📡 ${stationName} (${station.key})</h3>
+                    <p>Địa chỉ: ${displayAddress} | Thời gian lấy mẫu: <strong>${timeString}</strong></p>
+                </div>
+            `;
+            
+            // --- 2. PHẦN THẺ ĐO LƯỜNG (CARDS) ---
+            const logs = station.measuringLogs;
+            const grid = document.createElement('div');
+            grid.classList.add('measurement-grid');
+
+            if (logs && typeof logs === 'object') {
+                
+                // Lặp qua TẤT CẢ các khóa (ví dụ: CO, NOx, SO2)
+                Object.keys(logs).forEach(key => {
+                    const measure = logs[key]; 
+                    
+                    // Định dạng giá trị
+                    const value = measure.value;
+                    const valueDisplay = (value !== null && value !== undefined) 
+                                         ? Number(value).toFixed(2) : 'N/A';
+                    
+                    // 💡 LOGIC MỚI: Xây dựng chuỗi giới hạn linh hoạt
+                    let limitText = '';
+                    const minL = measure.minLimit;
+                    const maxL = measure.maxLimit;
+                    
+                    if (minL !== null && maxL !== null) {
+                        limitText = `Giới hạn: ${minL} → ${maxL}`;
+                    } else if (minL !== null) {
+                        // Ví dụ: Lưu lượng (MinLimit >= 0)
+                        limitText = `Giới hạn: ≥ ${minL}`;
+                    } else if (maxL !== null) {
+                        // Ví dụ: Bụi (MaxLimit <= 40)
+                        limitText = `Giới hạn: ≤ ${maxL}`;
+                    } else {
+                        limitText = `Giới hạn: N/A`;
+                    }
+                    // Thêm khoảng trắng cho dễ đọc nếu là khoảng
+                    const limitDisplay = limitText.replace('→', ' → '); 
+
+
+                    // Tạo thẻ đo lường
+                    const card = document.createElement('div');
+                    card.classList.add('measure-card');
+
+                    // Xây dựng nội dung thẻ
+                    card.innerHTML = `
+                        <div class="key-info">
+                            <span class="key-name">${key} (${measure.name})</span>
+                            <span class="status-dot"></span>
+                        </div>
+                        <div class="value-display-container">
+                            <span class="value-display">${valueDisplay}</span>
+                            <span class="unit-display">${measure.unit || ''}</span>
+                        </div>
+                        <div class="limit-info">
+                            ${limitDisplay}
+                        </div>
+                    `;
+                    
+                    grid.appendChild(card);
+                });
+                stationContainer.appendChild(grid);
+            } else {
+                 stationContainer.innerHTML += `<p style="margin-top: 15px;">Không có dữ liệu đo lường chi tiết.</p>`;
+            }
+            
+            container.appendChild(stationContainer);
+            container.appendChild(document.createElement('hr')); 
+        });
+        
+    } else {
+         container.innerHTML += '<p>Không tìm thấy dữ liệu trạm quan trắc nào trong phản hồi API.</p>';
+    }
+}
+        // Bắt đầu quá trình tải dữ liệu
+        loadEmissionData();
+    </script>
+</body>
+</html>
