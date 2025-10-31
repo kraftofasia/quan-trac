@@ -80,10 +80,8 @@
     </style>
 </head>
 <body>
-
     <div id="data-container">
-        <p class="loading">Đang tải dữ liệu...</p>
-    </div>
+        </div>
 
     <script>
         // 1. Khai báo URL Endpoint và Header
@@ -107,7 +105,12 @@
             };
 
             try {
-                container.innerHTML = `<p class="loading">Đang tải dữ liệu...</p>`;
+                // 💡 CHỈNH SỬA: Thay vì hiển thị thông báo "Đang tải..." trong container,
+                // chúng ta chỉ nên xóa nội dung cũ (nếu có) trước khi tải.
+                // Tuy nhiên, vì chúng ta muốn loại bỏ hoàn toàn, ta chỉ cần gọi fetch ngay.
+                // Nếu muốn giữ thông báo lỗi (error), ta vẫn cần hàm này.
+                // Ta tạm thời KHÔNG đặt thông báo tải vào đây nữa.
+                
                 const response = await fetch(API_URL, requestOptions);
 
                 if (!response.ok) {
@@ -120,13 +123,15 @@
 
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu API:", error);
-                container.innerHTML = `<p class="error">❌ Lỗi kết nối: ${error.message}. Kiểm tra khóa và CORS.</p>`;
+                // Giữ lại thông báo lỗi nếu tải thất bại
+                container.innerHTML = `<p class="error" style="margin-left: 0; padding: 15px; border: 1px solid #dc3545; border-radius: 4px;">❌ Lỗi kết nối: ${error.message}. Kiểm tra khóa và CORS.</p>`;
             }
         }
 
-        // Hàm tạo các phần tử HTML để hiển thị dữ liệu (ĐÃ BỎ KEY TRẠM TRÊN TIÊU ĐỀ)
+        // Hàm tạo các phần tử HTML để hiển thị dữ liệu
         function displayData(apiResponse) {
-            container.innerHTML = '<h2>Báo cáo Quan trắc Thời gian thực</h2>'; 
+            // Đảm bảo container trống trước khi vẽ
+            container.innerHTML = ''; 
 
             const stationsData = apiResponse; 
 
@@ -164,8 +169,7 @@
                          });
                     }
 
-                    // Thêm tiêu đề trạm
-                    // 💡 CHỈNH SỬA: Loại bỏ ${station.key} khỏi thẻ H3
+                    // Thêm tiêu đề trạm (Đã bỏ mã trạm)
                     stationContainer.innerHTML += `
                         <div class="station-header">
                             <h3>📡 ${stationName}</h3>
