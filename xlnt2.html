@@ -124,118 +124,123 @@
             }
         }
 
-        // Hàm tạo các phần tử HTML để hiển thị dữ liệu (ĐÃ CHỈNH SỬA)
-	// Hàm tạo các phần tử HTML để hiển thị dữ liệu (ĐÃ CHỈNH SỬA LẠI LOGIC GIỚI HẠN)
-function displayData(apiResponse) {
-    container.innerHTML = '<h2>Báo cáo Quan trắc Thời gian thực</h2>'; 
+        // Hàm tạo các phần tử HTML để hiển thị dữ liệu (ĐÃ BỎ KEY TRẠM TRÊN TIÊU ĐỀ)
+        function displayData(apiResponse) {
+            container.innerHTML = '<h2>Báo cáo Quan trắc Thời gian thực</h2>'; 
 
-    const stationsData = apiResponse; 
+            const stationsData = apiResponse; 
 
-    if (Array.isArray(stationsData) && stationsData.length > 0) {
-        
-        stationsData.forEach(station => {
-            
-            // --- 1. PHẦN ĐẦU BÁO CÁO (HEADER) ---
-            const stationContainer = document.createElement('div');
-            stationContainer.classList.add('station-report');
-
-            const stationName = station.name || station.key || 'Trạm không rõ';
-            
-            // Chuẩn hóa địa chỉ
-            let displayAddress = 'N/A';
-            if (station.key === 'KT_MARUBENI1' || station.key === 'KT_MARUBENI2_1') {
-                displayAddress = 'Phước Hoà, TP HCM, Việt Nam';
-            } else {
-                displayAddress = station.address || 'N/A';
-            }
-            
-            // Thời gian lấy mẫu
-            let timeString = 'N/A';
-            if(station.receivedAt) {
-                 timeString = new Date(station.receivedAt).toLocaleString('vi-VN', { 
-                    day: '2-digit', month: '2-digit', year: 'numeric', 
-                    hour: '2-digit', minute: '2-digit', hour12: false 
-                 });
-            }
-
-            // Thêm tiêu đề trạm
-            stationContainer.innerHTML += `
-                <div class="station-header">
-                    <h3>📡 ${stationName} (${station.key})</h3>
-                    <p>Địa chỉ: ${displayAddress} | Thời gian lấy mẫu: <strong>${timeString}</strong></p>
-                </div>
-            `;
-            
-            // --- 2. PHẦN THẺ ĐO LƯỜNG (CARDS) ---
-            const logs = station.measuringLogs;
-            const grid = document.createElement('div');
-            grid.classList.add('measurement-grid');
-
-            if (logs && typeof logs === 'object') {
+            if (Array.isArray(stationsData) && stationsData.length > 0) {
                 
-                // Lặp qua TẤT CẢ các khóa (ví dụ: CO, NOx, SO2)
-                Object.keys(logs).forEach(key => {
-                    const measure = logs[key]; 
+                stationsData.forEach(station => {
                     
-                    // Định dạng giá trị
-                    const value = measure.value;
-                    const valueDisplay = (value !== null && value !== undefined) 
-                                         ? Number(value).toFixed(2) : 'N/A';
+                    // --- 1. PHẦN ĐẦU BÁO CÁO (HEADER) ---
+                    const stationContainer = document.createElement('div');
+                    stationContainer.classList.add('station-report');
+
+                    // Logic cập nhật TÊN TRẠM
+                    let stationName = station.name || station.key || 'Trạm không rõ';
                     
-                    // 💡 LOGIC MỚI: Xây dựng chuỗi giới hạn linh hoạt
-                    let limitText = '';
-                    const minL = measure.minLimit;
-                    const maxL = measure.maxLimit;
-                    
-                    if (minL !== null && maxL !== null) {
-                        limitText = `Giới hạn: ${minL} → ${maxL}`;
-                    } else if (minL !== null) {
-                        // Ví dụ: Lưu lượng (MinLimit >= 0)
-                        limitText = `Giới hạn: ≥ ${minL}`;
-                    } else if (maxL !== null) {
-                        // Ví dụ: Bụi (MaxLimit <= 40)
-                        limitText = `Giới hạn: ≤ ${maxL}`;
-                    } else {
-                        limitText = `Giới hạn: N/A`;
+                    if (station.key === 'KT_MARUBENI1') {
+                        stationName = 'Nhà Máy Giấy KOA 1 - KCN Chuyên Sâu Phú Mỹ 3';
+                    } else if (station.key === 'KT_MARUBENI2_1') {
+                        stationName = 'Nhà Máy Giấy KOA 2 - KCN Chuyên Sâu Phú Mỹ 3';
                     }
-                    // Thêm khoảng trắng cho dễ đọc nếu là khoảng
-                    const limitDisplay = limitText.replace('→', ' → '); 
+                    
+                    // Chuẩn hóa địa chỉ
+                    let displayAddress = 'N/A';
+                    if (station.key === 'KT_MARUBENI1' || station.key === 'KT_MARUBENI2_1') {
+                        displayAddress = 'Phước Hoà, TP HCM, Việt Nam';
+                    } else {
+                        displayAddress = station.address || 'N/A';
+                    }
+                    
+                    // Thời gian lấy mẫu
+                    let timeString = 'N/A';
+                    if(station.receivedAt) {
+                         timeString = new Date(station.receivedAt).toLocaleString('vi-VN', { 
+                            day: '2-digit', month: '2-digit', year: 'numeric', 
+                            hour: '2-digit', minute: '2-digit', hour12: false 
+                         });
+                    }
 
-
-                    // Tạo thẻ đo lường
-                    const card = document.createElement('div');
-                    card.classList.add('measure-card');
-
-                    // Xây dựng nội dung thẻ
-                    card.innerHTML = `
-                        <div class="key-info">
-                            <span class="key-name">${key} (${measure.name})</span>
-                            <span class="status-dot"></span>
-                        </div>
-                        <div class="value-display-container">
-                            <span class="value-display">${valueDisplay}</span>
-                            <span class="unit-display">${measure.unit || ''}</span>
-                        </div>
-                        <div class="limit-info">
-                            ${limitDisplay}
+                    // Thêm tiêu đề trạm
+                    // 💡 CHỈNH SỬA: Loại bỏ ${station.key} khỏi thẻ H3
+                    stationContainer.innerHTML += `
+                        <div class="station-header">
+                            <h3>📡 ${stationName}</h3>
+                            <p>Địa chỉ: ${displayAddress} | Thời gian lấy mẫu: <strong>${timeString}</strong></p>
                         </div>
                     `;
                     
-                    grid.appendChild(card);
+                    // --- 2. PHẦN THẺ ĐO LƯỜNG (CARDS) ---
+                    const logs = station.measuringLogs;
+                    const grid = document.createElement('div');
+                    grid.classList.add('measurement-grid');
+
+                    if (logs && typeof logs === 'object') {
+                        
+                        // Lặp qua TẤT CẢ các khóa (ví dụ: CO, NOx, SO2)
+                        Object.keys(logs).forEach(key => {
+                            const measure = logs[key]; 
+                            
+                            // Định dạng giá trị
+                            const value = measure.value;
+                            const valueDisplay = (value !== null && value !== undefined) 
+                                                     ? Number(value).toFixed(2) : 'N/A';
+                            
+                            // LOGIC: Xây dựng chuỗi giới hạn linh hoạt
+                            let limitText = '';
+                            const minL = measure.minLimit;
+                            const maxL = measure.maxLimit;
+                            
+                            if (minL !== null && maxL !== null) {
+                                limitText = `Giới hạn: ${minL} → ${maxL}`;
+                            } else if (minL !== null) {
+                                limitText = `Giới hạn: ≥ ${minL}`;
+                            } else if (maxL !== null) {
+                                limitText = `Giới hạn: ≤ ${maxL}`;
+                            } else {
+                                limitText = `Giới hạn: N/A`;
+                            }
+                            // Thêm khoảng trắng cho dễ đọc nếu là khoảng
+                            const limitDisplay = limitText.replace('→', ' → '); 
+
+
+                            // Tạo thẻ đo lường
+                            const card = document.createElement('div');
+                            card.classList.add('measure-card');
+
+                            // Xây dựng nội dung thẻ
+                            card.innerHTML = `
+                                <div class="key-info">
+                                    <span class="key-name">${key} (${measure.name})</span>
+                                    <span class="status-dot"></span>
+                                </div>
+                                <div class="value-display-container">
+                                    <span class="value-display">${valueDisplay}</span>
+                                    <span class="unit-display">${measure.unit || ''}</span>
+                                </div>
+                                <div class="limit-info">
+                                    ${limitDisplay}
+                                </div>
+                            `;
+                            
+                            grid.appendChild(card);
+                        });
+                        stationContainer.appendChild(grid);
+                    } else {
+                         stationContainer.innerHTML += `<p style="margin-top: 15px;">Không có dữ liệu đo lường chi tiết.</p>`;
+                    }
+                    
+                    container.appendChild(stationContainer);
+                    container.appendChild(document.createElement('hr')); 
                 });
-                stationContainer.appendChild(grid);
+                
             } else {
-                 stationContainer.innerHTML += `<p style="margin-top: 15px;">Không có dữ liệu đo lường chi tiết.</p>`;
+                 container.innerHTML += '<p>Không tìm thấy dữ liệu trạm quan trắc nào trong phản hồi API.</p>';
             }
-            
-            container.appendChild(stationContainer);
-            container.appendChild(document.createElement('hr')); 
-        });
-        
-    } else {
-         container.innerHTML += '<p>Không tìm thấy dữ liệu trạm quan trắc nào trong phản hồi API.</p>';
-    }
-}
+        }
         // Bắt đầu quá trình tải dữ liệu
         loadEmissionData();
     </script>
